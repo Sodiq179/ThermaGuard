@@ -23,6 +23,7 @@ class Settings:
     sim_speed: float
     retention_hours: int
     cors_origins: tuple
+    static_dir: str
 
 
 @lru_cache(maxsize=1)
@@ -39,4 +40,5 @@ def get_settings() -> Settings:
         sim_speed=float(env("SIM_SPEED", "5")),
         retention_hours=int(env("RETENTION_HOURS", "24")),
         cors_origins=tuple(o for o in env("CORS_ORIGINS", "http://localhost:5173").split(",") if o),
+        static_dir=env("STATIC_DIR", ""),
     )

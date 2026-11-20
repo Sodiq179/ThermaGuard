@@ -1,0 +1,20 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# Deploys ThermaGuard as one free web service (API + dashboard + embedded simulator).
+services:
+  - type: web
+    name: thermaguard
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: SITE_NAME
+        value: ThermaGuard Demo Site, Dammam
+      - key: SIM_SCENARIO
+        value: normal_day
+      - key: SIM_SPEED
+        value: "5"
+      - key: EMBEDDED_SIMULATOR
+        value: "true"

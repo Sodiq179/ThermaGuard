@@ -18,7 +18,12 @@ router = APIRouter(tags=["dashboard"])
 
 @router.get("/health", response_model=schemas.Health)
 def health(container: Container = Depends(get_container)) -> schemas.Health:
-    return schemas.Health(status="ok", version=__version__, mqtt_connected=container.mqtt_connected)
+    return schemas.Health(
+        status="ok",
+        version=__version__,
+        mqtt_enabled=container.settings.mqtt_enabled,
+        mqtt_connected=container.mqtt_connected,
+    )
 
 
 @router.get("/overview", response_model=schemas.Overview)

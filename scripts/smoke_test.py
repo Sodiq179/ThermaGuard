@@ -35,7 +35,10 @@ def main() -> int:
     results = []
     _, health = call("GET", "/health")
     results.append(check("API healthy", health["status"] == "ok"))
-    results.append(check("Backend connected to MQTT broker", health["mqtt_connected"]))
+    if health.get("mqtt_enabled", True):
+        results.append(check("Backend connected to MQTT broker", health["mqtt_connected"]))
+    else:
+        print("  [SKIP] MQTT disabled (single-container mode, devices use HTTP ingest)")
 
     deadline = time.time() + 60
     overview = None
@@ -44,7 +47,7 @@ def main() -> int:
         if all(z["env"] for z in overview["zones"]):
             break
         time.sleep(2)
-    results.append(check("Every zone receives station data over MQTT",
+    results.append(check("Every zone receives station data",
                          all(z["env"] for z in overview["zones"]), f"{len(overview['zones'])} zones"))
     results.append(check("Work-rest recommendations computed",
                          all(len(z["recommendations"]) == 3 for z in overview["zones"])))

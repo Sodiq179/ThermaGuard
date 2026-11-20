@@ -122,7 +122,7 @@ interface Alert {
 
 | Method | Path | Response |
 |---|---|---|
-| GET | `/health` | `{status: "ok", version: string, mqtt_connected: boolean}` |
+| GET | `/health` | `{status: "ok", version: string, mqtt_enabled: boolean, mqtt_connected: boolean}` |
 | GET | `/overview` | `Overview` |
 | GET | `/zones` | `ZoneSummary[]` |
 | GET | `/zones/{id}` | `ZoneDetail` |

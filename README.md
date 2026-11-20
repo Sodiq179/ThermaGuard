@@ -142,6 +142,10 @@ All thresholds live in [`backend/config/thresholds.yaml`](backend/config/thresho
 Live updates: the backend re-evaluates state when data arrives (at most once per second, and
 every 5 s for time-based conditions), then pushes a refresh signal and new alerts over `/ws`.
 
+## Deploying online (Render, free)
+
+The root `Dockerfile` and `render.yaml` deploy ThermaGuard as a single free Render web service (API, dashboard and simulator in one container). Step-by-step guide: [docs/deploy-render.md](docs/deploy-render.md).
+
 ## Connecting real sensors
 
 See [docs/sensor-integration.md](docs/sensor-integration.md). In short: give each device the
@@ -179,7 +183,7 @@ ThermaGuard/
 ## Testing
 
 ```powershell
-# Backend unit + API tests (46)
+# Backend unit + API tests (50)
 cd backend; pip install -r requirements-dev.txt; python -m pytest -q
 
 # Simulator tests (7)

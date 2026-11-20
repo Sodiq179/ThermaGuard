@@ -247,6 +247,7 @@ class SimState(Model):
 class Health(Model):
     status: str
     version: str
+    mqtt_enabled: bool
     mqtt_connected: bool
 
 

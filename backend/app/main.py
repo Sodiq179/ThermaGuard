@@ -16,6 +16,7 @@ from .api import actions, admin, ingest, read
 from .config import Settings, get_settings
 from .container import Container
 from .services.commands import Conflict, NotFound
+from .static_site import mount_dashboard
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
@@ -70,6 +71,9 @@ def create_app(settings: Optional[Settings] = None, start_background: bool = Tru
                 await ws.receive_text()  # keep-alive; clients do not send commands
         except WebSocketDisconnect:
             container.hub.disconnect(ws)
+
+    if container.settings.static_dir and mount_dashboard(app, container.settings.static_dir):
+        logging.getLogger(__name__).info("Serving dashboard from %s", container.settings.static_dir)
 
     return app
 

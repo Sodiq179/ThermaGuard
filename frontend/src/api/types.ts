@@ -118,6 +118,7 @@ export interface Alert {
 export interface Health {
   status: "ok";
   version: string;
+  mqtt_enabled: boolean;
   mqtt_connected: boolean;
 }
 

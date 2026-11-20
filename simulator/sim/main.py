@@ -20,6 +20,7 @@ from .transport import HttpTransport, MqttTransport, Transport
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s simulator: %(message)s")
 log = logging.getLogger("simulator")
+logging.getLogger("httpx").setLevel(logging.WARNING)  # one line per reading is too noisy
 
 API_URL = os.environ.get("API_URL", "http://localhost:8000")
 TRANSPORT = os.environ.get("TRANSPORT", "mqtt").lower()
