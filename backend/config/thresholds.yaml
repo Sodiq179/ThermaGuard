@@ -1,0 +1,70 @@
+# ThermaGuard heat-stress thresholds.
+# Edit this file to tune the decision logic; no code changes are needed.
+# Sources: ISO 7243:2017 (WBGT), ACGIH TLV for heat stress (acclimatized workers),
+# Saudi Ministry of Human Resources midday outdoor work ban.
+
+# Zone heat bands by WBGT (°C). A reading falls in the first band whose max it is below.
+bands:
+  - key: low
+    label: Low
+    max_c: 25.0
+    color: "#16a34a"
+    guidance: Normal work. Keep water available and remind workers to hydrate.
+  - key: moderate
+    label: Moderate
+    max_c: 28.0
+    color: "#ca8a04"
+    guidance: Increase water breaks and watch new or unacclimatized workers.
+  - key: high
+    label: High
+    max_c: 30.0
+    color: "#ea580c"
+    guidance: Apply work-rest cycles, schedule heavy tasks for cooler hours.
+  - key: very_high
+    label: Very high
+    max_c: 32.0
+    color: "#dc2626"
+    guidance: Limit heavy work, enforce shaded rest and check workers frequently.
+  - key: extreme
+    label: Extreme
+    max_c: null
+    color: "#7e22ce"
+    guidance: Stop non-essential outdoor work and move workers to cool rest areas.
+
+# ACGIH TLV work-rest table (acclimatized). Values are WBGT limits (°C) per hour of work.
+# null means the combination is not permitted.
+work_rest:
+  - { work_minutes: 60, rest_minutes: 0,  light: 31.0, moderate: 28.0, heavy: null }
+  - { work_minutes: 45, rest_minutes: 15, light: 31.0, moderate: 29.0, heavy: 27.5 }
+  - { work_minutes: 30, rest_minutes: 30, light: 32.0, moderate: 30.0, heavy: 29.0 }
+  - { work_minutes: 15, rest_minutes: 45, light: 32.5, moderate: 31.5, heavy: 30.5 }
+
+# Reference WBGT for continuous work per intensity, used for the worker heat-load factor.
+continuous_reference_c:
+  light: 31.0
+  moderate: 28.0
+  heavy: 26.0
+
+# Worker attention scoring (rule-based fuzzy logic, no heart rate).
+attention:
+  skin_temp_c:   { low: 35.0, high: 37.5, watch: 36.0, act: 37.0 }   # torso skin under the harness
+  skin_trend_c_per_10min: { low: 0.2, high: 1.0 }
+  exposure_ratio: { low: 0.7, high: 1.3 }   # continuous work time / allowed work minutes per hour
+  heat_load_c:   { low: -3.0, high: 3.0 }   # WBGT minus continuous reference for the intensity
+  levels:        { watch: 25, attention: 50, act_now: 75 }
+
+pcm:
+  melt_point_c: 28.0      # commercial PCM28 candidate
+  spent_margin_c: 2.0     # pack considered spent above melt point + margin
+
+sensors:
+  stale_after_s: 60
+  battery_low_pct: 20
+
+midday_ban:
+  start: "12:00"
+  end: "15:00"
+  season_start: "06-15"
+  season_end: "09-15"
+  timezone: Asia/Riyadh
+  rule: Outdoor work under direct sun is prohibited from 12:00 to 15:00 between 15 June and 15 September (Saudi Ministry of Human Resources).

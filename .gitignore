@@ -1,0 +1,23 @@
+# Dependencies and build output
+node_modules/
+dist/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+
+# Local data and secrets
+backend/data/
+*.db
+*.db-wal
+*.db-shm
+.env
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
