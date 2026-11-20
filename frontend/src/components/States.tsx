@@ -3,14 +3,14 @@ import { AlertCircle, Inbox, RotateCw } from "lucide-react";
 import clsx from "clsx";
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={clsx("skeleton rounded-lg bg-slate-200/70 dark:bg-slate-800", className)} aria-hidden />;
+  return <div className={clsx("skeleton rounded-md bg-slate-200/60 dark:bg-white/[0.06]", className)} aria-hidden />;
 }
 
 export function SkeletonCards({ count = 3, className }: { count?: number; className?: string }) {
   return (
     <div className={clsx("grid gap-4 sm:grid-cols-2 xl:grid-cols-3", className)} role="status" aria-label="Loading">
       {Array.from({ length: count }, (_, i) => (
-        <div key={i} className="card space-y-4 p-5">
+        <div key={i} className="card space-y-3 p-4">
           <Skeleton className="h-4 w-1/3" />
           <Skeleton className="h-10 w-1/2" />
           <Skeleton className="h-3 w-full" />
@@ -27,10 +27,10 @@ export function PageSkeleton() {
       <Skeleton className="h-8 w-64" />
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {Array.from({ length: 4 }, (_, i) => (
-          <Skeleton key={i} className="h-24 rounded-2xl" />
+          <Skeleton key={i} className="h-20 rounded-lg" />
         ))}
       </div>
-      <Skeleton className="h-72 rounded-2xl" />
+      <Skeleton className="h-72 rounded-lg" />
     </div>
   );
 }
@@ -45,12 +45,10 @@ interface EmptyStateProps {
 
 export function EmptyState({ title, message, icon, action, className }: EmptyStateProps) {
   return (
-    <div className={clsx("flex flex-col items-center justify-center px-6 py-12 text-center", className)}>
-      <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
-        {icon ?? <Inbox className="h-6 w-6" aria-hidden />}
-      </span>
-      <p className="font-medium text-slate-900 dark:text-white">{title}</p>
-      {message && <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">{message}</p>}
+    <div className={clsx("flex flex-col items-center justify-center px-6 py-10 text-center", className)}>
+      <span className="mb-2 text-slate-300 dark:text-slate-600 [&>svg]:h-5 [&>svg]:w-5">{icon ?? <Inbox strokeWidth={1.75} aria-hidden />}</span>
+      <p className="text-[13px] font-medium text-slate-900 dark:text-white">{title}</p>
+      {message && <p className="mt-0.5 max-w-sm text-[13px] text-slate-500 dark:text-slate-400">{message}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );
@@ -69,16 +67,14 @@ export function ErrorState({ error, onRetry, title = "Couldn't load data", class
     <div
       role="alert"
       className={clsx(
-        "card flex flex-col items-center gap-3 border-red-200 px-6 py-10 text-center dark:border-red-900/60",
+        "card flex flex-col items-center gap-2 px-6 py-10 text-center",
         className,
       )}
     >
-      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-400">
-        <AlertCircle className="h-6 w-6" aria-hidden />
-      </span>
+      <AlertCircle className="h-5 w-5 text-red-500" strokeWidth={1.75} aria-hidden />
       <div>
-        <p className="font-semibold text-slate-900 dark:text-white">{title}</p>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{message}</p>
+        <p className="text-[14px] font-semibold text-slate-900 dark:text-white">{title}</p>
+        <p className="mt-0.5 text-[13px] text-slate-500 dark:text-slate-400">{message}</p>
       </div>
       {onRetry && (
         <button type="button" className="btn-secondary mt-1" onClick={onRetry}>

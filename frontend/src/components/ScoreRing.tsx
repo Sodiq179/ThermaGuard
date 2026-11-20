@@ -6,9 +6,9 @@ interface ScoreRingProps {
 }
 
 /** Circular 0–100 gauge with the score in the centre. */
-export function ScoreRing({ score, color, label, size = 168 }: ScoreRingProps) {
+export function ScoreRing({ score, color, label, size = 136 }: ScoreRingProps) {
   const clamped = Math.max(0, Math.min(100, score));
-  const stroke = 14;
+  const stroke = 6;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   // Draw a 270° arc, open at the bottom.
@@ -32,7 +32,7 @@ export function ScoreRing({ score, color, label, size = 168 }: ScoreRingProps) {
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={`${arc} ${c}`}
-          className="stroke-slate-100 dark:stroke-slate-800"
+          className="stroke-slate-100 dark:stroke-white/[0.08]"
         />
         <circle
           cx={size / 2}
@@ -47,11 +47,11 @@ export function ScoreRing({ score, color, label, size = 168 }: ScoreRingProps) {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="tnum text-5xl font-semibold tracking-tight text-slate-900 dark:text-white">
+        <span className="tnum text-[32px] font-semibold leading-none text-slate-900 dark:text-white">
           {Math.round(clamped)}
         </span>
-        <span className="mt-0.5 text-xs font-medium uppercase tracking-wider text-slate-400">of 100</span>
-        <span className="mt-1 text-sm font-semibold" style={{ color }}>
+        <span className="mt-1 text-[12px] text-slate-400">of 100</span>
+        <span className="mt-1 text-[13px] font-medium" style={{ color }}>
           {label}
         </span>
       </div>

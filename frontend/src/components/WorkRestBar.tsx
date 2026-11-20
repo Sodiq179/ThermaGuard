@@ -3,63 +3,78 @@ import { OctagonX } from "lucide-react";
 import type { WorkRest } from "../api/types";
 import { INTENSITY_LABEL } from "../lib/format";
 
-interface WorkRestBarProps {
+/** A one-hour clock face: the work share of the hour as an arc, rest as the remainder. */
+function HourClock({ work, stop, color }: { work: number; stop: boolean; color: string }) {
+  const size = 72;
+  const stroke = 5;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const workLen = stop ? 0 : (Math.max(0, Math.min(60, work)) / 60) * c;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0 -rotate-90" aria-hidden>
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        strokeWidth={stroke}
+        className="stroke-slate-200 dark:stroke-white/[0.1]"
+      />
+      {!stop && (
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          strokeWidth={stroke}
+          strokeDasharray={`${workLen} ${c}`}
+          stroke={color}
+          strokeLinecap="round"
+        />
+      )}
+    </svg>
+  );
+}
+
+interface WorkRestCardProps {
   rec: WorkRest;
   highlighted?: boolean;
 }
 
-/** Card showing the hourly work vs rest split for one intensity. */
-export function WorkRestCard({ rec, highlighted }: WorkRestBarProps) {
-  const workPct = Math.max(0, Math.min(100, (rec.work_minutes / 60) * 100));
+export function WorkRestCard({ rec, highlighted }: WorkRestCardProps) {
   return (
     <div
       className={clsx(
-        "relative rounded-2xl border p-4 transition",
-        rec.stop_work
-          ? "border-red-300 bg-red-50 dark:border-red-900 dark:bg-red-950/40"
-          : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900",
-        highlighted && "ring-2 ring-sky-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900",
+        "flex items-center gap-4 rounded-md border p-3",
+        highlighted ? "border-accent-500/60 dark:border-accent-500/50" : "border-slate-200 dark:border-white/[0.08]",
       )}
+      role="group"
+      aria-label={`${INTENSITY_LABEL[rec.intensity]} work: ${rec.label}`}
     >
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-slate-900 dark:text-white">{INTENSITY_LABEL[rec.intensity]} work</p>
-        {highlighted && (
-          <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-700 dark:bg-sky-500/15 dark:text-sky-300">
-            Zone default
-          </span>
-        )}
-      </div>
-      {rec.stop_work ? (
-        <div className="mt-3 flex items-center gap-2 text-red-700 dark:text-red-400">
-          <OctagonX className="h-7 w-7" aria-hidden />
-          <span className="text-2xl font-bold tracking-tight">Stop work</span>
+      <div className="relative">
+        <HourClock work={rec.work_minutes} stop={rec.stop_work} color="#2563EB" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          {rec.stop_work ? (
+            <OctagonX className="h-5 w-5 text-red-600 dark:text-red-400" strokeWidth={1.75} aria-hidden />
+          ) : (
+            <span className="tnum text-[15px] font-semibold text-slate-900 dark:text-white">{rec.work_minutes}′</span>
+          )}
         </div>
-      ) : (
-        <p className="tnum mt-3 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
-          {rec.work_minutes}
-          <span className="text-sm font-medium text-slate-500"> min work</span>
-          <span className="mx-1.5 text-slate-300 dark:text-slate-600">/</span>
-          {rec.rest_minutes}
-          <span className="text-sm font-medium text-slate-500"> min rest</span>
-        </p>
-      )}
-      <div
-        className="mt-3 flex h-3 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
-        role="img"
-        aria-label={rec.stop_work ? "No work permitted this hour" : `${rec.work_minutes} minutes work, ${rec.rest_minutes} minutes rest per hour`}
-      >
-        {rec.stop_work ? (
-          <div className="h-full w-full bg-[repeating-linear-gradient(45deg,#dc2626_0_6px,#f87171_6px_12px)]" />
-        ) : (
-          <>
-            <div className="h-full bg-slate-800 transition-all dark:bg-slate-200" style={{ width: `${workPct}%` }} />
-            <div className="h-full flex-1 bg-teal-400/70 dark:bg-teal-500/60" />
-          </>
-        )}
       </div>
-      <div className="mt-2 flex justify-between text-xs text-slate-500 dark:text-slate-400">
-        <span>{rec.stop_work ? "Rest / relocate" : "Work"}</span>
-        <span>{rec.limit_c !== null ? `Limit ${rec.limit_c.toFixed(1)} °C WBGT` : "Per hour"}</span>
+      <div className="min-w-0">
+        <p className="text-[13px] text-slate-500 dark:text-slate-400">
+          {INTENSITY_LABEL[rec.intensity]} work{highlighted && <span className="text-accent-600 dark:text-accent-500"> · zone default</span>}
+        </p>
+        {rec.stop_work ? (
+          <p className="mt-0.5 text-[15px] font-semibold text-red-700 dark:text-red-400">Stop work</p>
+        ) : (
+          <p className="tnum mt-0.5 text-[15px] font-semibold text-slate-900 dark:text-white">
+            {rec.work_minutes} min work / {rec.rest_minutes} min rest
+          </p>
+        )}
+        <p className="tnum mt-0.5 text-[12px] text-slate-400">
+          {rec.stop_work ? "Rest in shade or relocate" : rec.limit_c !== null ? `Per hour · limit ${rec.limit_c.toFixed(1)} °C WBGT` : "Per hour"}
+        </p>
       </div>
     </div>
   );

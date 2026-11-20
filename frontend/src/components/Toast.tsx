@@ -30,7 +30,7 @@ const TONE = {
   critical: { icon: AlertOctagon, cls: "text-red-600 dark:text-red-400", bar: "bg-red-600" },
 } as const;
 
-const MAX_TOASTS = 4;
+const MAX_TOASTS = 3;
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
@@ -42,7 +42,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     (t: ToastInput) => {
       const id = nextId.current++;
       setItems((xs) => [...xs, { ...t, id }].slice(-MAX_TOASTS));
-      const ttl = t.tone === "critical" ? 9000 : t.tone === "error" || t.tone === "warning" ? 7000 : 4000;
+      const ttl = t.tone === "critical" ? 10000 : 6000;
       window.setTimeout(() => dismiss(id), ttl);
     },
     [dismiss],
@@ -54,7 +54,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={value}>
       {children}
       <div
-        className="pointer-events-none fixed inset-x-4 bottom-4 z-[60] flex flex-col items-end gap-2 sm:inset-x-auto sm:right-6 sm:bottom-6"
+        className="pointer-events-none fixed bottom-4 right-4 z-[60] flex w-[min(360px,calc(100vw-2rem))] flex-col gap-2 sm:bottom-6 sm:right-6"
         aria-live="polite"
         role="region"
         aria-label="Notifications"
@@ -72,17 +72,17 @@ function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: () => vo
   const Icon = tone.icon;
   const body = (
     <div className="min-w-0 flex-1">
-      <p className="text-sm font-semibold text-slate-900 dark:text-white">{toast.title}</p>
-      {toast.message && <p className="mt-0.5 line-clamp-2 text-sm text-slate-600 dark:text-slate-400">{toast.message}</p>}
+      <p className="truncate text-[13px] font-semibold text-slate-900 dark:text-white">{toast.title}</p>
+      {toast.message && <p className="mt-0.5 line-clamp-1 text-[12px] text-slate-500 dark:text-slate-400">{toast.message}</p>}
     </div>
   );
   return (
     <div
       role={toast.tone === "critical" || toast.tone === "error" ? "alert" : "status"}
-      className="card pointer-events-auto relative flex w-full max-w-sm animate-toast-in items-start gap-3 overflow-hidden p-4 pl-5 shadow-lift"
+      className="pointer-events-auto relative flex w-full animate-toast-in items-center gap-2.5 overflow-hidden rounded-md border border-slate-200 bg-white py-2 pl-3.5 pr-1.5 shadow-sm dark:border-white/[0.1] dark:bg-slate-900"
     >
-      <span className={clsx("absolute inset-y-0 left-0 w-1", tone.bar)} aria-hidden />
-      <Icon className={clsx("mt-0.5 h-5 w-5 shrink-0", tone.cls)} aria-hidden />
+      <span className={clsx("absolute inset-y-0 left-0 w-[3px]", tone.bar)} aria-hidden />
+      <Icon className={clsx("h-4 w-4 shrink-0", tone.cls)} strokeWidth={1.75} aria-hidden />
       {toast.href ? (
         <Link to={toast.href} onClick={onDismiss} className="min-w-0 flex-1 rounded hover:opacity-80">
           {body}
@@ -90,7 +90,7 @@ function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: () => vo
       ) : (
         body
       )}
-      <button type="button" onClick={onDismiss} className="icon-btn -mr-2 -mt-2 h-8 w-8" aria-label="Dismiss notification">
+      <button type="button" onClick={onDismiss} className="icon-btn h-7 w-7" aria-label="Dismiss notification">
         <X className="h-4 w-4" />
       </button>
     </div>

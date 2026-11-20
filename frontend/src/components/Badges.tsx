@@ -1,27 +1,35 @@
 import type { ReactNode } from "react";
 import clsx from "clsx";
-import { AlertOctagon, AlertTriangle, CheckCircle2, Coffee, Eye, Footprints, HardHat, LogOut } from "lucide-react";
 import type { AttentionLevel, HeatBand, Intensity, WorkerStatus } from "../api/types";
-import { BAND_COLOR, INTENSITY_LABEL, STATUS_LABEL } from "../lib/format";
+import { ATTENTION_COLOR, BAND_COLOR, INTENSITY_LABEL, STATUS_LABEL } from "../lib/format";
 
 export function bandColor(band: HeatBand | null | undefined): string {
   if (!band) return "#94a3b8";
   return band.color || BAND_COLOR[band.key];
 }
 
-interface ChipProps {
-  children: ReactNode;
-  className?: string;
-  title?: string;
+export function Dot({ color, size = 8 }: { color: string; size?: number }) {
+  return <span className="inline-block shrink-0 rounded-full" style={{ width: size, height: size, backgroundColor: color }} aria-hidden />;
 }
 
-export function Chip({ children, className, title }: ChipProps) {
+/** Status text preceded by a small coloured dot. */
+export function DotLabel({ color, children, className }: { color: string; children: ReactNode; className?: string }) {
+  return (
+    <span className={clsx("inline-flex items-center gap-1.5 whitespace-nowrap text-[13px] text-slate-700 dark:text-slate-300", className)}>
+      <Dot color={color} />
+      {children}
+    </span>
+  );
+}
+
+/** Neutral tag: the only "badge" style in the system. */
+export function Chip({ children, className, title }: { children: ReactNode; className?: string; title?: string }) {
   return (
     <span
       title={title}
       className={clsx(
-        "inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium",
-        className ?? "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+        "inline-flex items-center gap-1 whitespace-nowrap rounded-md border border-slate-200 px-1.5 py-0.5 text-[12px] font-medium text-slate-600 dark:border-white/[0.1] dark:text-slate-300",
+        className,
       )}
     >
       {children}
@@ -29,93 +37,42 @@ export function Chip({ children, className, title }: ChipProps) {
   );
 }
 
-export function HeatBadge({ band, size = "sm" }: { band: HeatBand | null; size?: "sm" | "md" }) {
-  if (!band) return <Chip>No data</Chip>;
-  const color = bandColor(band);
-  return (
-    <span
-      className={clsx(
-        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full font-semibold",
-        size === "md" ? "px-3 py-1 text-sm" : "px-2.5 py-0.5 text-xs",
-      )}
-      style={{ color, backgroundColor: `${color}1f`, boxShadow: `inset 0 0 0 1px ${color}40` }}
-    >
-      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} aria-hidden />
-      {band.label}
-      <span className="sr-only"> heat band</span>
-    </span>
-  );
+export function HeatBadge({ band }: { band: HeatBand | null }) {
+  if (!band) return <span className="text-[13px] text-slate-400">No data</span>;
+  return <DotLabel color={bandColor(band)}>{band.label}</DotLabel>;
 }
-
-const ATTENTION_STYLE: Record<AttentionLevel, { cls: string; icon: typeof CheckCircle2 }> = {
-  normal: {
-    cls: "bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/30",
-    icon: CheckCircle2,
-  },
-  watch: {
-    cls: "bg-amber-50 text-amber-800 ring-amber-600/25 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/30",
-    icon: Eye,
-  },
-  attention: {
-    cls: "bg-orange-50 text-orange-800 ring-orange-600/25 dark:bg-orange-500/10 dark:text-orange-300 dark:ring-orange-400/30",
-    icon: AlertTriangle,
-  },
-  act_now: {
-    cls: "bg-red-600 text-white ring-red-700 animate-pulse-ring dark:bg-red-600 dark:text-white",
-    icon: AlertOctagon,
-  },
-};
 
 export function AttentionBadge({ level, label, score }: { level: AttentionLevel; label: string; score?: number }) {
-  const s = ATTENTION_STYLE[level];
-  const Icon = s.icon;
   return (
-    <span
-      className={clsx(
-        "inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset",
-        s.cls,
-      )}
-    >
-      <Icon className="h-3.5 w-3.5" aria-hidden />
+    <DotLabel color={ATTENTION_COLOR[level]} className={level === "act_now" ? "font-medium text-red-700 dark:text-red-400" : undefined}>
       {label}
-      {score !== undefined && <span className="tnum opacity-80">· {Math.round(score)}</span>}
+      {score !== undefined && <span className="tnum text-slate-400">{Math.round(score)}</span>}
+    </DotLabel>
+  );
+}
+
+/** Attention level with a thin score bar, for tables. */
+export function AttentionMeter({ level, label, score }: { level: AttentionLevel; label: string; score: number }) {
+  const pct = Math.max(0, Math.min(100, score));
+  return (
+    <span className="inline-flex items-center gap-3">
+      <span className="w-[84px]">
+        <AttentionBadge level={level} label={label} />
+      </span>
+      <span className="h-1 w-12 overflow-hidden rounded-full bg-slate-100 dark:bg-white/[0.08]" aria-hidden>
+        <span className="block h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: pct >= 50 ? ATTENTION_COLOR[level] : "#94a3b8" }} />
+      </span>
+      <span className="tnum w-6 text-right text-[13px] text-slate-600 dark:text-slate-300">{Math.round(pct)}</span>
     </span>
   );
 }
 
-const INTENSITY_ICON_BARS: Record<Intensity, number> = { light: 1, moderate: 2, heavy: 3 };
-
 export function IntensityChip({ intensity }: { intensity: Intensity }) {
-  const bars = INTENSITY_ICON_BARS[intensity];
-  return (
-    <Chip>
-      <span className="flex items-end gap-px" aria-hidden>
-        {[1, 2, 3].map((b) => (
-          <span
-            key={b}
-            className={clsx("w-[3px] rounded-sm", b <= bars ? "bg-current" : "bg-current opacity-25")}
-            style={{ height: 4 + b * 2 }}
-          />
-        ))}
-      </span>
-      {INTENSITY_LABEL[intensity]}
-    </Chip>
-  );
+  return <span className="text-[13px] text-slate-700 dark:text-slate-300">{INTENSITY_LABEL[intensity]}</span>;
 }
 
-const STATUS_STYLE: Record<WorkerStatus, { cls: string; icon: typeof HardHat }> = {
-  working: { cls: "bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300", icon: HardHat },
-  break: { cls: "bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300", icon: Coffee },
-  off: { cls: "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400", icon: LogOut },
-};
+const STATUS_COLOR: Record<WorkerStatus, string> = { working: "#10b981", break: "#0ea5e9", off: "#94a3b8" };
 
 export function StatusChip({ status }: { status: WorkerStatus }) {
-  const s = STATUS_STYLE[status] ?? { cls: undefined, icon: Footprints };
-  const Icon = s.icon;
-  return (
-    <Chip className={s.cls}>
-      <Icon className="h-3.5 w-3.5" aria-hidden />
-      {STATUS_LABEL[status] ?? status}
-    </Chip>
-  );
+  return <DotLabel color={STATUS_COLOR[status] ?? "#94a3b8"}>{STATUS_LABEL[status] ?? status}</DotLabel>;
 }

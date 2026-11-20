@@ -26,7 +26,7 @@ After installing Docker Desktop, open it and wait until it shows **Engine runnin
 ### Step 1: clone the repository
 
 ```powershell
-git clone https://github.com/<your-username>/ThermaGuard.git
+git clone https://github.com/Sodiq179/ThermaGuard.git
 cd ThermaGuard
 ```
 
@@ -191,6 +191,11 @@ cd frontend; npm ci; npm run typecheck; npm test; npm run build
 # End-to-end, against the running Docker stack (standard library only)
 python scripts/smoke_test.py
 ```
+
+## Worker photos
+
+The demo ships placeholder portraits for the 12 demo workers (from randomuser.me; they do not depict real workers). Workers without a photo show their initials.
+To use real photos, put `W001.jpg`, `W002.jpg`, ... in [`frontend/public/avatars/`](frontend/public/avatars) and run `docker compose up -d --build frontend`. Only add photos with the worker's consent.
 
 ## Configuration
 

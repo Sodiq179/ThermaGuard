@@ -4,13 +4,19 @@ export default {
   darkMode: "class",
   theme: {
     extend: {
+      colors: {
+        // Ink-tinted dark surfaces (premium dark mode, not grey).
+        slate: { 800: "#232833", 850: "#191D26", 900: "#12151C", 950: "#0B0D12" },
+        ink: { DEFAULT: "#0E1117", 900: "#0E1117", 800: "#161A22" },
+        accent: { DEFAULT: "#2563EB", 50: "#EFF4FF", 100: "#DBE6FE", 500: "#3B7BF6", 600: "#2563EB", 700: "#1D4FD8" },
+      },
       fontFamily: {
         sans: ['"Inter Variable"', "Inter", "system-ui", "-apple-system", "Segoe UI", "sans-serif"],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
       boxShadow: {
-        card: "0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.06)",
-        lift: "0 4px 6px -1px rgb(15 23 42 / 0.06), 0 12px 24px -6px rgb(15 23 42 / 0.12)",
+        card: "0 1px 2px 0 rgb(15 23 42 / 0.03)",
+        lift: "0 2px 4px -1px rgb(15 23 42 / 0.06), 0 12px 28px -8px rgb(15 23 42 / 0.18)",
       },
       keyframes: {
         "toast-in": { from: { opacity: "0", transform: "translateY(8px) scale(0.98)" }, to: { opacity: "1", transform: "none" } },

@@ -3,7 +3,8 @@ import clsx from "clsx";
 import { BatteryLow, BatteryMedium, BatteryFull, WifiOff } from "lucide-react";
 import type { VestStatus, WorkerSummary } from "../api/types";
 import { ATTENTION_ORDER, fmtMinutes, fmtTemp } from "../lib/format";
-import { AttentionBadge, IntensityChip, StatusChip } from "./Badges";
+import { AttentionMeter, IntensityChip, StatusChip } from "./Badges";
+import { Avatar } from "./Avatar";
 
 export function sortFlaggedFirst(workers: WorkerSummary[]): WorkerSummary[] {
   return [...workers].sort(
@@ -25,7 +26,7 @@ export function Battery({ vest }: { vest: VestStatus | null }) {
         pct !== null && pct < 20 ? "text-red-600 dark:text-red-400" : "text-slate-600 dark:text-slate-300",
       )}
     >
-      <Icon className="h-4 w-4" aria-hidden />
+      <Icon className="h-4 w-4 text-slate-400" strokeWidth={1.75} aria-hidden />
       {pct === null ? "—" : `${Math.round(pct)}%`}
       {vest.stale && <WifiOff className="h-3.5 w-3.5 text-amber-500" aria-label="Vest not reporting" />}
     </span>
@@ -40,20 +41,19 @@ interface WorkerTableProps {
 export function WorkerTable({ workers, showZone = false }: WorkerTableProps) {
   const navigate = useNavigate();
   return (
-    <div className="relative overflow-x-auto">
+    <div className="relative max-h-[640px] overflow-auto">
       <table className="table-base">
         <thead>
           <tr>
             <th scope="col">Worker</th>
             {showZone && <th scope="col">Zone</th>}
-            <th scope="col">Trade</th>
-            <th scope="col">Intensity</th>
+            {!showZone && <th scope="col">Intensity</th>}
             <th scope="col">Status</th>
             <th scope="col" className="text-right">Skin temp</th>
             <th scope="col" className="text-right">Continuous</th>
-            <th scope="col" className="text-right">Total today</th>
+            <th scope="col" className="text-right">Today</th>
             <th scope="col">Attention</th>
-            <th scope="col">Battery</th>
+            <th scope="col" className="text-right">Battery</th>
           </tr>
         </thead>
         <tbody>
@@ -62,11 +62,14 @@ export function WorkerTable({ workers, showZone = false }: WorkerTableProps) {
               key={w.id}
               onClick={() => navigate(`/workers/${w.id}`)}
               className={clsx(
-                "cursor-pointer transition hover:bg-slate-50 dark:hover:bg-slate-800/50",
-                w.attention.level === "act_now" && "bg-red-50/60 dark:bg-red-950/20",
+                "cursor-pointer hover:bg-slate-50 dark:hover:bg-white/[0.03]",
+                
               )}
             >
               <td>
+                <div className="flex items-center gap-3">
+                  <Avatar id={w.id} name={w.name} size={28} />
+                  <div className="min-w-0">
                 <a
                   href={`/workers/${w.id}`}
                   onClick={(e) => {
@@ -74,17 +77,22 @@ export function WorkerTable({ workers, showZone = false }: WorkerTableProps) {
                     e.stopPropagation();
                     navigate(`/workers/${w.id}`);
                   }}
-                  className="rounded font-medium text-slate-900 hover:underline dark:text-white"
+                  className="rounded text-[13px] font-medium leading-5 text-slate-900 hover:underline dark:text-white"
                 >
                   {w.name}
                 </a>
-                <div className="text-xs text-slate-400">{w.id}</div>
+                <div className="text-[12px] leading-4 text-slate-500 dark:text-slate-400">
+                      {w.id} · {w.trade}
+                    </div>
+                  </div>
+                </div>
               </td>
               {showZone && <td className="text-slate-600 dark:text-slate-300">{w.zone_name ?? "—"}</td>}
-              <td className="text-slate-600 dark:text-slate-300">{w.trade}</td>
-              <td>
-                <IntensityChip intensity={w.intensity} />
-              </td>
+              {!showZone && (
+                <td>
+                  <IntensityChip intensity={w.intensity} />
+                </td>
+              )}
               <td>
                 <StatusChip status={w.status} />
               </td>
@@ -92,9 +100,9 @@ export function WorkerTable({ workers, showZone = false }: WorkerTableProps) {
               <td className="tnum text-right">{w.status === "off" ? "—" : fmtMinutes(w.continuous_exposure_min)}</td>
               <td className="tnum text-right text-slate-600 dark:text-slate-300">{fmtMinutes(w.total_exposure_min)}</td>
               <td>
-                <AttentionBadge level={w.attention.level} label={w.attention.label} score={w.attention.score} />
+                <AttentionMeter level={w.attention.level} label={w.attention.label} score={w.attention.score} />
               </td>
-              <td>
+              <td className="text-right">
                 <Battery vest={w.vest} />
               </td>
             </tr>

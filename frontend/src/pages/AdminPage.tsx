@@ -13,6 +13,7 @@ import {
 import { PageHeader } from "../components/PageHeader";
 import { Card, CardHeader } from "../components/Card";
 import { IntensityChip } from "../components/Badges";
+import { Avatar } from "../components/Avatar";
 import { EmptyState, ErrorState, Skeleton } from "../components/States";
 import { INTENSITIES, INTENSITY_LABEL } from "../lib/format";
 
@@ -147,8 +148,13 @@ function WorkersAdmin() {
                   {workers.data.map((w) => (
                     <tr key={w.id} className={editing === w.id ? "bg-sky-50/60 dark:bg-sky-500/5" : undefined}>
                       <td>
-                        <div className="font-medium text-slate-900 dark:text-white">{w.name}</div>
-                        <div className="text-xs text-slate-400">{w.id}</div>
+                        <div className="flex items-center gap-3">
+                          <Avatar id={w.id} name={w.name} size={28} />
+                          <div>
+                            <div className="font-medium text-slate-900 dark:text-white">{w.name}</div>
+                            <div className="text-[12px] text-slate-400">{w.id}</div>
+                          </div>
+                        </div>
                       </td>
                       <td className="text-slate-600 dark:text-slate-300">{w.trade}</td>
                       <td>

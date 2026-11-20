@@ -53,7 +53,7 @@ function SimControls({ sim }: { sim: SimState }) {
           <div className="flex flex-1 items-center gap-4">
             <span
               className={clsx(
-                "flex h-12 w-12 items-center justify-center rounded-2xl",
+                "flex h-12 w-12 items-center justify-center rounded-lg",
                 sim.enabled ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400" : "bg-slate-100 text-slate-400 dark:bg-slate-800",
               )}
             >

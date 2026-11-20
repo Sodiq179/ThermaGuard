@@ -26,7 +26,7 @@ function titleFor(path: string): string {
 
 function NavItems({ onNavigate, alertCount }: { onNavigate?: () => void; alertCount: number }) {
   return (
-    <ul className="space-y-1">
+    <ul className="space-y-0.5">
       {NAV.map((n) => {
         const Icon = n.icon;
         return (
@@ -37,18 +37,16 @@ function NavItems({ onNavigate, alertCount }: { onNavigate?: () => void; alertCo
               onClick={onNavigate}
               className={({ isActive }) =>
                 clsx(
-                  "group flex items-center gap-3 rounded-full px-4 py-2.5 text-sm font-medium transition",
-                  isActive
-                    ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-white",
+                  "flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[14px] transition-colors",
+                  isActive ? "bg-white/[0.06] font-medium text-white" : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200",
                 )
               }
             >
-              <Icon className="h-[18px] w-[18px]" aria-hidden />
+              <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden />
               <span className="flex-1">{n.label}</span>
               {"badge" in n && alertCount > 0 && (
                 <span
-                  className="tnum min-w-[22px] rounded-full bg-red-600 px-1.5 py-0.5 text-center text-[11px] font-semibold text-white"
+                  className="tnum text-[12px] text-slate-400"
                   aria-label={`${alertCount} open alerts`}
                 >
                   {alertCount > 99 ? "99+" : alertCount}
@@ -62,16 +60,24 @@ function NavItems({ onNavigate, alertCount }: { onNavigate?: () => void; alertCo
   );
 }
 
+function SiteCard({ name, live }: { name?: string; live: LiveStatus }) {
+  const ok = live === "live";
+  return (
+    <div className="mt-auto border-t border-white/[0.06] px-2.5 pt-3">
+      <p className="truncate text-[13px] font-medium text-slate-200">{name ?? "Site"}</p>
+      <p className="mt-0.5 flex items-center gap-1.5 text-[12px] text-slate-500">
+        <span className={clsx("h-1.5 w-1.5 rounded-full", ok ? "bg-emerald-400" : "bg-amber-400")} aria-hidden />
+        {ok ? "Telemetry live" : "Reconnecting"} · Decision support only
+      </p>
+    </div>
+  );
+}
+
 function LiveDot({ status }: { status: LiveStatus }) {
   const live = status === "live";
   return (
     <span
-      className={clsx(
-        "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium",
-        live
-          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
-          : "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
-      )}
+      className="inline-flex items-center gap-1.5 text-[12px] text-slate-600 dark:text-slate-300"
       role="status"
     >
       <span className="relative flex h-2 w-2">
@@ -92,7 +98,7 @@ function Clock() {
     return () => window.clearInterval(t);
   }, []);
   return (
-    <span className="tnum hidden text-sm text-slate-500 sm:inline dark:text-slate-400" title="Local time (Asia/Riyadh)">
+    <span className="tnum hidden text-[12px] text-slate-500 sm:inline dark:text-slate-400" title="Local time (Asia/Riyadh)">
       {clockFmt.format(now)} <span className="text-slate-400 dark:text-slate-500">AST</span>
     </span>
   );
@@ -120,16 +126,14 @@ export function Layout() {
       </a>
 
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-slate-200/80 bg-white px-4 py-5 lg:flex dark:border-slate-800 dark:bg-slate-900">
-        <div className="px-3 pb-6">
-          <Logo />
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-white/[0.06] bg-ink px-3 py-4 lg:flex">
+        <div className="px-2.5 pb-6">
+          <Logo inverted />
         </div>
         <nav aria-label="Main">
           <NavItems alertCount={alertCount} />
         </nav>
-        <div className="mt-auto rounded-2xl bg-slate-50 p-4 text-xs leading-relaxed text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
-          Decision support for supervisors. Not a medical device.
-        </div>
+        <SiteCard name={siteName} live={live} />
       </aside>
 
       {/* Mobile drawer */}
@@ -141,29 +145,32 @@ export function Layout() {
             aria-label="Close navigation"
             onClick={() => setDrawer(false)}
           />
-          <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] animate-toast-in flex-col bg-white px-4 py-5 shadow-lift dark:bg-slate-900">
-            <div className="flex items-center justify-between px-3 pb-6">
-              <Logo />
-              <button type="button" className="icon-btn" aria-label="Close navigation" onClick={() => setDrawer(false)}>
+          <div className="absolute inset-y-0 left-0 flex w-64 max-w-[85vw] flex-col bg-ink px-3 py-4">
+            <div className="flex items-center justify-between px-2 pb-6">
+              <Logo inverted />
+              <button type="button" className="icon-btn text-slate-400 hover:bg-white/10 hover:text-white" aria-label="Close navigation" onClick={() => setDrawer(false)}>
                 <X className="h-5 w-5" />
               </button>
             </div>
             <nav aria-label="Main">
               <NavItems alertCount={alertCount} onNavigate={() => setDrawer(false)} />
             </nav>
+            <SiteCard name={siteName} live={live} />
           </div>
         </div>
       )}
 
-      <div className="lg:pl-64">
-        <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/80 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/80">
-          <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-3 px-4 sm:px-6 lg:px-8">
+      <div className="lg:pl-60">
+        <header className="sticky top-0 z-20 border-b border-slate-200 bg-white dark:border-white/[0.08] dark:bg-slate-950">
+          <div className="mx-auto flex h-12 max-w-[1440px] items-center gap-3 px-4 sm:px-6 lg:px-8">
             <button type="button" className="icon-btn -ml-2 lg:hidden" aria-label="Open navigation" onClick={() => setDrawer(true)}>
               <Menu className="h-5 w-5" />
             </button>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[15px] font-semibold text-slate-900 dark:text-white">{titleFor(location.pathname)}</p>
-              {siteName && <p className="truncate text-xs text-slate-500 dark:text-slate-400">{siteName}</p>}
+              <p className="truncate text-[13px] text-slate-500 dark:text-slate-400">
+                {siteName ?? "ThermaGuard"} <span className="text-slate-300 dark:text-slate-600">/</span>{" "}
+                <span className="font-medium text-slate-900 dark:text-white">{titleFor(location.pathname)}</span>
+              </p>
             </div>
             <Clock />
             <LiveDot status={live} />
@@ -177,7 +184,7 @@ export function Layout() {
             </button>
           </div>
         </header>
-        <main id="main" className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <main id="main" className="mx-auto max-w-[1440px] px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
           <Outlet />
         </main>
       </div>

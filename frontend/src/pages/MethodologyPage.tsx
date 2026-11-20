@@ -31,13 +31,13 @@ export function MethodologyPage() {
 
 function Section({ id, icon, title, lead, children }: { id: string; icon: ReactNode; title: string; lead?: string; children: ReactNode }) {
   return (
-    <Card as="article" className="scroll-mt-24 p-6 sm:p-8">
+    <Card as="article" className="scroll-mt-24 p-5">
       <div id={id} className="mb-5 flex items-start gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+        <span className="mt-0.5 shrink-0 text-slate-400 [&>svg]:h-4 [&>svg]:w-4">
           {icon}
         </span>
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-white">{title}</h2>
+          <h2 className="text-[16px] font-semibold text-slate-900 dark:text-white">{title}</h2>
           {lead && <p className="mt-1 max-w-2xl text-slate-600 dark:text-slate-400">{lead}</p>}
         </div>
       </div>
@@ -85,7 +85,7 @@ function Doc({ m }: { m: Methodology }) {
           title="Wet Bulb Globe Temperature (ISO 7243)"
           lead="WBGT combines air temperature, humidity, radiant heat and wind into one heat-load index. It is the basis for every band and work–rest recommendation."
         >
-          <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-red-50 p-6 text-center ring-1 ring-inset ring-amber-200/60 dark:from-amber-500/5 dark:to-red-500/5 dark:ring-amber-500/20">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-5 text-center dark:border-white/[0.08] dark:bg-slate-950">
             <p className="font-mono text-lg font-semibold text-slate-900 sm:text-xl dark:text-white">{m.wbgt_formula}</p>
           </div>
           <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-3">
@@ -102,7 +102,7 @@ function Doc({ m }: { m: Methodology }) {
               <dd className="mt-1 text-slate-600 dark:text-slate-400">Dry-bulb temperature measured in shade.</dd>
             </div>
           </dl>
-          <p className="mt-5 flex items-start gap-2 rounded-xl bg-slate-50 p-3 text-sm text-slate-600 dark:bg-slate-800/50 dark:text-slate-400">
+          <p className="mt-5 flex items-start gap-2 rounded-md bg-slate-50 p-3 text-sm text-slate-600 dark:bg-slate-800/50 dark:text-slate-400">
             <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             <span>
               Stations without a globe sensor report an <strong className="font-semibold">estimated</strong> WBGT from air
@@ -194,7 +194,7 @@ function Doc({ m }: { m: Methodology }) {
         >
           <div className="grid gap-4 sm:grid-cols-2">
             {m.attention_inputs.map((a) => (
-              <div key={a.key} className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
+              <div key={a.key} className="rounded-lg border border-slate-200 p-4 dark:border-slate-800">
                 <p className="font-semibold text-slate-900 dark:text-white">{a.label}</p>
                 <dl className="mt-3 space-y-2 text-sm">
                   <div className="flex gap-2">
@@ -213,18 +213,18 @@ function Doc({ m }: { m: Methodology }) {
 
         <Section id="midday" icon={<BookOpen className="h-5 w-5" />} title="Saudi midday work ban" lead={m.midday_ban.rule}>
           <dl className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/50">
+            <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-800/50">
               <dt className="eyebrow">Season</dt>
               <dd className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">{m.midday_ban.season}</dd>
             </div>
-            <div className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/50">
+            <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-800/50">
               <dt className="eyebrow">Daily window</dt>
               <dd className="tnum mt-1 text-lg font-semibold text-slate-900 dark:text-white">{m.midday_ban.window}</dd>
             </div>
           </dl>
         </Section>
 
-        <div id="disclaimer" className="scroll-mt-24 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+        <div id="disclaimer" className="scroll-mt-24 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-5 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
           <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
           <div>
             <p className="font-semibold">Disclaimer</p>

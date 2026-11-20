@@ -1,168 +1,259 @@
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Bell, Coffee, Flame, HardHat, LayoutGrid, Sun, SunDim, TriangleAlert } from "lucide-react";
-import clsx from "clsx";
-import type { MiddayBan, Overview, ZoneSummary } from "../api/types";
-import { useAlerts, useOverview } from "../api/hooks";
+import type { MiddayBan, Overview, WorkerSummary, ZoneSummary } from "../api/types";
+import { useAlerts, useOverview, useWorkers } from "../api/hooks";
 import { Card, CardHeader } from "../components/Card";
-import { StatTile } from "../components/StatTile";
 import { ZoneCard } from "../components/ZoneCard";
 import { AlertItem } from "../components/AlertItem";
-import { bandColor } from "../components/Badges";
-import { EmptyState, ErrorState, PageSkeleton, Skeleton } from "../components/States";
+import { Avatar } from "../components/Avatar";
+import { Dot } from "../components/Badges";
+import { sortFlaggedFirst } from "../components/WorkerTable";
+import { EmptyState, ErrorState, Skeleton } from "../components/States";
 import { ChartTooltip, axisProps, tickTime, useChartTheme } from "../components/chart";
-import { fmtTemp } from "../lib/format";
+import { ATTENTION_COLOR, TZ, fmtTemp } from "../lib/format";
 
-const SERIES_COLORS = ["#2563eb", "#0d9488", "#d946ef", "#64748b", "#0891b2", "#4f46e5", "#be185d", "#65a30d"];
+const SERIES_COLORS = ["#2563eb", "#0d9488", "#a855f7", "#64748b", "#0891b2", "#4f46e5", "#be185d", "#65a30d"];
 
 export function OverviewPage() {
   const { data, isLoading, error, refetch } = useOverview();
-  if (isLoading) return <PageSkeleton />;
+  if (isLoading) return <OverviewSkeleton />;
   if (error || !data) return <ErrorState error={error} onRetry={() => void refetch()} />;
   return <OverviewContent data={data} />;
 }
 
-function OverviewContent({ data }: { data: Overview }) {
-  const { site, kpis, zones } = data;
+function OverviewSkeleton() {
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl dark:text-white">Site overview</h1>
-          <p className="mt-1 text-slate-500 dark:text-slate-400">{site.name}</p>
+    <div className="space-y-5" role="status" aria-label="Loading">
+      <Skeleton className="h-7 w-48" />
+      <Skeleton className="h-[76px] rounded-lg" />
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="grid gap-4 md:grid-cols-2">
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-52 rounded-lg" />
+          ))}
         </div>
-        <MiddayBanPill ban={site.midday_ban} />
-      </div>
-
-      {site.midday_ban.active && <MiddayBanBanner ban={site.midday_ban} />}
-
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">
-        <StatTile label="Zones" value={kpis.zones} icon={<LayoutGrid className="h-4 w-4" />} />
-        <StatTile label="Active workers" value={kpis.workers_active} icon={<HardHat className="h-4 w-4" />} />
-        <StatTile label="On break" value={kpis.workers_on_break} icon={<Coffee className="h-4 w-4" />} />
-        <StatTile
-          label="Flagged workers"
-          value={kpis.workers_flagged}
-          icon={<TriangleAlert className="h-4 w-4" />}
-          accent={kpis.workers_flagged > 0 ? "#ea580c" : undefined}
-          hint={kpis.workers_flagged > 0 ? "Attention or act now" : "None flagged"}
-        />
-        <StatTile
-          label="Open alerts"
-          value={kpis.open_alerts}
-          icon={<Bell className="h-4 w-4" />}
-          accent={kpis.open_alerts > 0 ? "#dc2626" : undefined}
-          className="col-span-2 md:col-span-1"
-        />
-      </div>
-
-      <WorstBanner overview={data} />
-
-      <section aria-labelledby="zones-heading">
-        <h2 id="zones-heading" className="mb-3 text-base font-semibold text-slate-900 dark:text-white">
-          Work zones
-        </h2>
-        {zones.length === 0 ? (
-          <Card>
-            <EmptyState title="No zones yet" message="Add work zones in Admin to start monitoring." action={<Link to="/admin" className="btn-primary">Open admin</Link>} />
-          </Card>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {zones.map((z) => (
-              <ZoneCard key={z.id} zone={z} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
-        <SiteTrend history={data.site_wbgt_history} zones={zones} />
-        <AlertFeed />
+        <Skeleton className="h-96 rounded-lg" />
       </div>
     </div>
   );
 }
 
-function MiddayBanPill({ ban }: { ban: MiddayBan }) {
+const clockFmt = new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hour12: false });
+
+function useNow(intervalMs: number): Date {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(new Date()), intervalMs);
+    return () => window.clearInterval(t);
+  }, [intervalMs]);
+  return now;
+}
+
+function OverviewContent({ data }: { data: Overview }) {
+  const workers = useWorkers();
+  const now = useNow(15000);
+  const byZone = useMemo(() => {
+    const map = new Map<string, WorkerSummary[]>();
+    for (const w of sortFlaggedFirst(workers.data ?? [])) {
+      if (!w.zone_id || w.status === "off") continue;
+      map.set(w.zone_id, [...(map.get(w.zone_id) ?? []), w]);
+    }
+    return map;
+  }, [workers.data]);
+  const trends = useMemo(() => {
+    const out: Record<string, number[]> = {};
+    for (const z of data.zones) {
+      out[z.id] = data.site_wbgt_history.map((p) => p[z.id]).filter((v): v is number => typeof v === "number");
+    }
+    return out;
+  }, [data]);
+  const zones = [...data.zones].sort((a, b) => (b.env?.wbgt_c ?? -1) - (a.env?.wbgt_c ?? -1));
+
+  return (
+    <div className="space-y-5">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="h-display">Overview</h1>
+          <p className="tnum mt-0.5 text-[13px] text-slate-500 dark:text-slate-400">
+            {data.site.name} · {clockFmt.format(now)} AST
+          </p>
+        </div>
+        <MiddayBanText ban={data.site.midday_ban} />
+      </header>
+
+      <ActionBar zones={data.zones} />
+      <KpiStrip data={data} />
+
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="min-w-0 space-y-5">
+          <section aria-labelledby="zones-heading">
+            <div className="mb-2.5 flex items-baseline justify-between">
+              <h2 id="zones-heading" className="h-title">
+                Zones
+              </h2>
+              <span className="text-[12px] text-slate-500 dark:text-slate-400">Highest WBGT first</span>
+            </div>
+            {zones.length === 0 ? (
+              <Card>
+                <EmptyState
+                  title="No zones yet"
+                  message="Add work zones in Admin to start monitoring."
+                  action={
+                    <Link to="/admin" className="btn-primary">
+                      Open admin
+                    </Link>
+                  }
+                />
+              </Card>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2">
+                {zones.map((z) => (
+                  <ZoneCard key={z.id} zone={z} trend={trends[z.id] ?? []} workers={byZone.get(z.id) ?? []} />
+                ))}
+              </div>
+            )}
+          </section>
+          <SiteTrend history={data.site_wbgt_history} zones={data.zones} />
+        </div>
+        <aside className="min-w-0 space-y-5">
+          <NeedsAttention workers={workers.data} loading={workers.isLoading} />
+          <AlertFeed />
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function MiddayBanText({ ban }: { ban: MiddayBan }) {
   if (ban.active) {
     return (
-      <span className="inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm">
-        <Sun className="h-4 w-4" aria-hidden /> Midday work ban in effect
-      </span>
+      <p className="flex items-center gap-2 text-[13px] font-medium text-red-700 dark:text-red-400" title={ban.rule}>
+        <Dot color="#dc2626" /> Midday work ban in effect ({ban.window})
+      </p>
     );
   }
   return (
-    <span
-      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400"
-      title={ban.rule}
-    >
-      <SunDim className="h-3.5 w-3.5" aria-hidden />
+    <p className="text-[13px] text-slate-500 dark:text-slate-400" title={ban.rule}>
       {ban.in_season ? `Midday ban: outside ${ban.window}` : "Midday ban: out of season (15 Jun–15 Sep, 12:00–15:00)"}
-    </span>
+    </p>
   );
 }
 
-function MiddayBanBanner({ ban }: { ban: MiddayBan }) {
-  return (
-    <div role="alert" className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-900 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
-      <Sun className="mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-400" aria-hidden />
-      <div>
-        <p className="font-semibold">Midday outdoor work ban in effect ({ban.window})</p>
-        <p className="mt-0.5 text-sm opacity-90">{ban.rule}</p>
-      </div>
-    </div>
-  );
-}
-
-function WorstBanner({ overview }: { overview: Overview }) {
-  const band = overview.site.worst_band;
-  if (!band) return null;
-  const color = bandColor(band);
-  const worstZone = overview.zones.reduce<ZoneSummary | null>(
-    (acc, z) => (z.env && (!acc?.env || z.env.wbgt_c > acc.env.wbgt_c) ? z : acc),
-    null,
-  );
+function ActionBar({ zones }: { zones: ZoneSummary[] }) {
+  const action = zones.filter((z) => (z.band?.level ?? 0) >= 3 || z.workers_flagged > 0);
+  if (action.length === 0) return null;
+  const worst = action.reduce((a, z) => ((z.band?.level ?? 0) > (a.band?.level ?? 0) ? z : a), action[0]);
   return (
     <div
-      className="card flex flex-col gap-4 overflow-hidden p-5 sm:flex-row sm:items-center"
-      style={{ backgroundImage: `linear-gradient(90deg, ${color}1a, transparent 60%)` }}
+      role="status"
+      className="rounded-md border border-l-[3px] border-slate-200 bg-white px-4 py-2.5 text-[13px] text-slate-700 dark:border-white/[0.08] dark:bg-slate-900 dark:text-slate-300"
+      style={{ borderLeftColor: worst.band?.color ?? "#dc2626" }}
     >
-      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white" style={{ backgroundColor: color }}>
-        <Flame className="h-6 w-6" aria-hidden />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="eyebrow">Worst condition on site</p>
-        <p className="mt-0.5 text-lg font-semibold text-slate-900 dark:text-white">
-          <span style={{ color }}>{band.label}</span> heat load
-          {worstZone && (
-            <>
-              {" "}in{" "}
-              <Link to={`/zones/${worstZone.id}`} className="underline decoration-slate-300 underline-offset-4 hover:decoration-slate-500">
-                {worstZone.name}
-              </Link>
-            </>
-          )}
-        </p>
-        <p className="text-sm text-slate-600 dark:text-slate-400">{band.guidance}</p>
-      </div>
-      <div className="text-left sm:text-right">
-        <p className="eyebrow">Max WBGT</p>
-        <p className="tnum text-3xl font-semibold" style={{ color }}>
-          {fmtTemp(overview.site.max_wbgt_c)}
-        </p>
-      </div>
+      <span className="font-medium text-slate-900 dark:text-white">
+        {action.length} {action.length === 1 ? "zone requires" : "zones require"} action:
+      </span>{" "}
+      {action.map((z, i) => (
+        <span key={z.id}>
+          {i > 0 && ", "}
+          <Link to={`/zones/${z.id}`} className="link">
+            {z.name}
+          </Link>
+        </span>
+      ))}
+      {worst.band && <span className="text-slate-500 dark:text-slate-400"> · {worst.band.guidance}</span>}
     </div>
+  );
+}
+
+function KpiStrip({ data }: { data: Overview }) {
+  const { kpis, site } = data;
+  const cells: { label: string; value: string; context: string; tone?: string }[] = [
+    {
+      label: "Max WBGT",
+      value: fmtTemp(site.max_wbgt_c),
+      context: site.worst_band ? `${site.worst_band.label} heat load` : "No readings",
+      tone: site.worst_band?.color,
+    },
+    { label: "Active workers", value: String(kpis.workers_active), context: `${kpis.zones} zones` },
+    { label: "On break", value: String(kpis.workers_on_break), context: "Resting" },
+    {
+      label: "Flagged workers",
+      value: String(kpis.workers_flagged),
+      context: "Attention or act now",
+      tone: kpis.workers_flagged > 0 ? "#dc2626" : undefined,
+    },
+    { label: "Open alerts", value: String(kpis.open_alerts), context: kpis.open_alerts > 0 ? "Needs review" : "All clear" },
+  ];
+  return (
+    <div className="card grid grid-cols-2 divide-slate-100 sm:grid-cols-3 lg:grid-cols-5 lg:divide-x dark:divide-white/[0.06]">
+      {cells.map((c) => (
+        <div key={c.label} className="px-4 py-3">
+          <p className="eyebrow">{c.label}</p>
+          <p className="tnum mt-0.5 text-[24px] font-semibold leading-8 text-slate-900 dark:text-white" style={c.tone ? { color: c.tone } : undefined}>
+            {c.value}
+          </p>
+          <p className="text-[12px] text-slate-400">{c.context}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function NeedsAttention({ workers, loading }: { workers: WorkerSummary[] | undefined; loading: boolean }) {
+  const flagged = sortFlaggedFirst(workers ?? []).filter((w) => w.attention.level !== "normal" && w.status !== "off");
+  return (
+    <Card>
+      <CardHeader
+        title="Needs attention"
+        action={
+          <Link to="/workers" className="link text-[13px]">
+            View all
+          </Link>
+        }
+      />
+      <div className="px-2 pb-2 pt-1">
+        {loading ? (
+          <div className="space-y-2 p-2">
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className="h-8" />
+            ))}
+          </div>
+        ) : flagged.length === 0 ? (
+          <p className="px-2 py-6 text-center text-[13px] text-slate-500">No worker is above the normal level.</p>
+        ) : (
+          <ul>
+            {flagged.slice(0, 8).map((w) => (
+              <li key={w.id}>
+                <Link to={`/workers/${w.id}`} className="flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-slate-50 dark:hover:bg-white/[0.04]">
+                  <Avatar id={w.id} name={w.name} size={28} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-medium text-slate-900 dark:text-white">{w.name}</p>
+                    <p className="truncate text-[12px] text-slate-500 dark:text-slate-400">{w.zone_name ?? "—"}</p>
+                  </div>
+                  <span className="flex items-center gap-1.5 text-[12px] text-slate-500 dark:text-slate-400">
+                    <Dot color={ATTENTION_COLOR[w.attention.level]} />
+                    {w.attention.label}
+                  </span>
+                  <span className="tnum w-7 text-right text-[13px] font-semibold text-slate-900 dark:text-white">{Math.round(w.attention.score)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </Card>
   );
 }
 
 function SiteTrend({ history, zones }: { history: Overview["site_wbgt_history"]; zones: ZoneSummary[] }) {
   const theme = useChartTheme();
   return (
-    <Card className="xl:col-span-3">
-      <CardHeader title="Site WBGT trend" subtitle="Last 30 minutes, per zone" />
-      <div className="h-72 px-2 pb-4 pt-4 sm:px-4">
+    <Card>
+      <CardHeader title="WBGT trend" subtitle="Last 30 minutes, by zone" />
+      <div className="h-64 px-2 pb-3 pt-2">
         {history.length === 0 ? (
-          <EmptyState title="No readings yet" message="Trend appears once stations start reporting." className="py-8" />
+          <EmptyState title="No readings yet" message="The trend appears once stations report." className="py-8" />
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={history} margin={{ top: 8, right: 16, bottom: 0, left: -8 }}>
@@ -170,7 +261,7 @@ function SiteTrend({ history, zones }: { history: Overview["site_wbgt_history"];
               <XAxis dataKey="ts" tickFormatter={tickTime} stroke={theme.axis} minTickGap={40} {...axisProps} />
               <YAxis stroke={theme.axis} domain={["auto", "auto"]} unit="°" width={44} {...axisProps} />
               <Tooltip content={<ChartTooltip format={(v) => fmtTemp(v)} />} cursor={{ stroke: theme.cursor }} />
-              <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+              <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize: 12, paddingTop: 6 }} />
               {zones.map((z, i) => (
                 <Line
                   key={z.id}
@@ -178,7 +269,7 @@ function SiteTrend({ history, zones }: { history: Overview["site_wbgt_history"];
                   dataKey={z.id}
                   name={z.name}
                   stroke={SERIES_COLORS[i % SERIES_COLORS.length]}
-                  strokeWidth={2}
+                  strokeWidth={1.5}
                   dot={false}
                   connectNulls
                   isAnimationActive={false}
@@ -195,29 +286,29 @@ function SiteTrend({ history, zones }: { history: Overview["site_wbgt_history"];
 function AlertFeed() {
   const { data, isLoading, error, refetch } = useAlerts(true, 20);
   return (
-    <Card className="flex flex-col xl:col-span-2">
+    <Card>
       <CardHeader
-        title="Live alerts"
-        subtitle="Newest first"
+        title="Alerts"
+        subtitle={data ? `${data.length} open` : undefined}
         action={
-          <Link to="/alerts" className="btn-ghost h-8 text-xs">
+          <Link to="/alerts" className="link text-[13px]">
             View all
           </Link>
         }
       />
-      <div className={clsx("flex-1 px-5 pb-3 sm:px-6", data && data.length > 0 && "max-h-[19rem] overflow-y-auto")}>
+      <div className="max-h-[28rem] overflow-y-auto px-4 pb-1">
         {isLoading ? (
-          <div className="space-y-4 py-4">
+          <div className="space-y-3 py-3">
             {[0, 1, 2].map((i) => (
-              <Skeleton key={i} className="h-12" />
+              <Skeleton key={i} className="h-10" />
             ))}
           </div>
         ) : error ? (
-          <ErrorState error={error} onRetry={() => void refetch()} className="my-4 border-0 shadow-none" />
+          <ErrorState error={error} onRetry={() => void refetch()} className="my-3 border-0" />
         ) : !data || data.length === 0 ? (
-          <EmptyState title="All clear" message="No open alerts on site right now." className="py-8" />
+          <p className="py-6 text-center text-[13px] text-slate-500">No open alerts.</p>
         ) : (
-          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+          <ul className="divide-y divide-slate-100 dark:divide-white/[0.06]">
             {data.map((a) => (
               <AlertItem key={a.id} alert={a} compact />
             ))}

@@ -43,7 +43,7 @@ export function PageHeader({ title, subtitle, crumbs, actions, accent, meta }: P
         <div className="flex min-w-0 items-stretch gap-4">
           {accent && <span className="w-1.5 shrink-0 rounded-full" style={{ backgroundColor: accent }} aria-hidden />}
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl dark:text-white">{title}</h1>
+            <h1 className="h-display">{title}</h1>
             {subtitle && <p className="mt-1 text-sm text-slate-500 sm:text-base dark:text-slate-400">{subtitle}</p>}
             {meta && <div className="mt-3 flex flex-wrap items-center gap-2">{meta}</div>}
           </div>

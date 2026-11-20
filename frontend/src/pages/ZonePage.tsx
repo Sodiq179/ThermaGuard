@@ -1,12 +1,11 @@
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Coffee, Droplets, Gauge, Play, Thermometer, ThermometerSun, Users, WifiOff } from "lucide-react";
+import { Coffee, Play, WifiOff } from "lucide-react";
 import type { Intensity, ZoneDetail } from "../api/types";
 import { useZone, useZoneBreak, useZoneIntensity } from "../api/hooks";
-import { PageHeader } from "../components/PageHeader";
 import { Card, CardHeader } from "../components/Card";
-import { StatTile } from "../components/StatTile";
-import { HeatBadge, Chip, bandColor } from "../components/Badges";
+import { StatStrip, StatTile } from "../components/StatTile";
+import { HeatBadge, bandColor } from "../components/Badges";
 import { WorkRestCard } from "../components/WorkRestBar";
 import { SegmentedControl } from "../components/SegmentedControl";
 import { WorkerTable, sortFlaggedFirst } from "../components/WorkerTable";
@@ -28,52 +27,48 @@ function ZoneContent({ zone }: { zone: ZoneDetail }) {
   const color = bandColor(zone.band);
   const env = zone.env;
   return (
-    <div className="space-y-6">
-      <PageHeader
-        crumbs={[{ label: "Site", to: "/" }, { label: zone.name }]}
-        title={zone.name}
-        subtitle={zone.description || `Station ${zone.station_id}`}
-        accent={color}
-        meta={
-          <>
-            <HeatBadge band={zone.band} size="md" />
-            <Chip>{zone.id}</Chip>
-            <Chip>Station {zone.station_id}</Chip>
-            {zone.on_break && (
-              <Chip className="bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300">
-                <Coffee className="h-3.5 w-3.5" aria-hidden /> Zone break active
-              </Chip>
-            )}
-            {zone.station_stale && (
-              <Chip className="bg-amber-50 text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
-                <WifiOff className="h-3.5 w-3.5" aria-hidden /> Station not reporting
-              </Chip>
-            )}
-          </>
-        }
-      />
+    <div className="space-y-5">
+      <header>
+        <nav aria-label="Breadcrumb" className="text-[13px] text-slate-500 dark:text-slate-400">
+          <Link to="/" className="hover:text-slate-900 dark:hover:text-white">
+            Overview
+          </Link>
+          <span className="mx-1.5 text-slate-300 dark:text-slate-600">/</span>
+          <span aria-current="page">{zone.name}</span>
+        </nav>
+        <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="h-display">{zone.name}</h1>
+            <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-slate-500 dark:text-slate-400">
+              {zone.description && <span>{zone.description}</span>}
+              <HeatBadge band={zone.band} />
+              <span>Station {zone.station_id}</span>
+              {zone.on_break && <span>Zone break active</span>}
+              {zone.station_stale && (
+                <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400">
+                  <WifiOff className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden /> Station not reporting
+                </span>
+              )}
+            </p>
+          </div>
+          {zone.band && <p className="max-w-md text-[13px] text-slate-600 dark:text-slate-300">{zone.band.guidance}</p>}
+        </div>
+      </header>
 
-      {zone.band && (
-        <p className="rounded-2xl border px-4 py-3 text-sm font-medium" style={{ borderColor: `${color}55`, backgroundColor: `${color}12`, color }}>
-          {zone.band.guidance}
-        </p>
-      )}
-
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <StatStrip>
         <StatTile
           label={env?.wbgt_estimated ? "WBGT (estimated)" : "WBGT"}
           value={fmtNum(env?.wbgt_c)}
           unit="°C"
-          accent={color}
-          icon={<Gauge className="h-4 w-4" />}
+          tone={zone.band ? color : undefined}
           hint={env ? `Updated ${fmtTime(env.ts)}` : "No reading yet"}
         />
-        <StatTile label="Air temp" value={fmtNum(env?.air_temp_c)} unit="°C" icon={<Thermometer className="h-4 w-4" />} />
-        <StatTile label="Humidity" value={fmtPct(env?.rh_pct)} icon={<Droplets className="h-4 w-4" />} />
-        <StatTile label="Heat index" value={fmtNum(env?.heat_index_c)} unit="°C" icon={<ThermometerSun className="h-4 w-4" />} />
-      </div>
+        <StatTile label="Air temperature" value={fmtNum(env?.air_temp_c)} unit="°C" />
+        <StatTile label="Relative humidity" value={fmtPct(env?.rh_pct)} />
+        <StatTile label="Heat index" value={fmtNum(env?.heat_index_c)} unit="°C" />
+      </StatStrip>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
         <EnvChart zone={zone} />
         <GroupActions zone={zone} />
       </div>
@@ -83,9 +78,9 @@ function ZoneContent({ zone }: { zone: ZoneDetail }) {
           title="Work–rest recommendation"
           subtitle="Per hour, ACGIH TLV for acclimatized workers at the current WBGT"
         />
-        <div className="grid gap-4 p-5 sm:p-6 md:grid-cols-3">
+        <div className="grid gap-3 px-4 pb-4 pt-1 lg:grid-cols-3">
           {zone.recommendations.length === 0 ? (
-            <p className="text-sm text-slate-500 md:col-span-3">Recommendations appear once the station reports.</p>
+            <p className="text-sm text-slate-500 lg:col-span-3">Recommendations appear once the station reports.</p>
           ) : (
             zone.recommendations.map((r) => (
               <WorkRestCard key={r.intensity} rec={r} highlighted={r.intensity === zone.default_intensity} />
@@ -98,9 +93,8 @@ function ZoneContent({ zone }: { zone: ZoneDetail }) {
         <CardHeader
           title="Workers in zone"
           subtitle={`${zone.workers_total} checked in · ${zone.workers_flagged} flagged`}
-          icon={<Users className="h-4 w-4" />}
-        />
-        <div className="mt-4 border-t border-slate-100 dark:border-slate-800">
+                  />
+        <div className="mt-1 border-t border-slate-200 dark:border-white/[0.08]">
           {zone.workers.length === 0 ? (
             <EmptyState title="No workers checked in" message="Check workers in from their page to monitor them here." />
           ) : (
@@ -118,7 +112,7 @@ function EnvChart({ zone }: { zone: ZoneDetail }) {
   return (
     <Card className="xl:col-span-3">
       <CardHeader title="Environment trend" subtitle="WBGT, air temperature and humidity · last 30 minutes" />
-      <div className="h-72 px-2 pb-4 pt-4 sm:px-4">
+      <div className="h-64 px-2 pb-3 pt-2">
         {zone.history.length === 0 ? (
           <EmptyState title="No readings yet" className="py-8" />
         ) : (
@@ -133,7 +127,7 @@ function EnvChart({ zone }: { zone: ZoneDetail }) {
                 cursor={{ stroke: theme.cursor }}
               />
               <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
-              <Line yAxisId="t" type="monotone" dataKey="wbgt_c" name="WBGT" stroke={color} strokeWidth={2.5} dot={false} isAnimationActive={false} />
+              <Line yAxisId="t" type="monotone" dataKey="wbgt_c" name="WBGT" stroke={color} strokeWidth={2} dot={false} isAnimationActive={false} />
               <Line yAxisId="t" type="monotone" dataKey="air_temp_c" name="Air temp" stroke="#64748b" strokeWidth={1.5} dot={false} isAnimationActive={false} />
               <Line yAxisId="rh" type="monotone" dataKey="rh_pct" name="Humidity" stroke="#0ea5e9" strokeWidth={1.5} strokeDasharray="4 3" dot={false} isAnimationActive={false} />
             </LineChart>
@@ -150,7 +144,7 @@ function GroupActions({ zone }: { zone: ZoneDetail }) {
   return (
     <Card className="xl:col-span-2">
       <CardHeader title="Group actions" subtitle="Apply to every worker checked in to this zone" />
-      <div className="space-y-6 p-5 sm:p-6">
+      <div className="space-y-5 px-4 pb-4 pt-1">
         <div>
           <p className="label">Zone break</p>
           <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">
@@ -170,7 +164,7 @@ function GroupActions({ zone }: { zone: ZoneDetail }) {
           ) : (
             <button
               type="button"
-              className="btn bg-teal-600 text-white hover:bg-teal-700"
+              className="btn-secondary"
               disabled={zoneBreak.isPending || zone.workers_working === 0}
               onClick={() => zoneBreak.mutate({ zoneId: zone.id, start: true })}
             >
